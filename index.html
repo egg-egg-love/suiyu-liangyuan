@@ -1083,14 +1083,19 @@
         return n < 10 ? '0' + n : String(n);
     }
 
-    function updateClock() {
-        var now = new Date();
-        var y = now.getFullYear();
-        var m = now.getMonth() + 1;
-        var d = now.getDate();
-        var h = now.getHours();
-        var mi = now.getMinutes();
-        var s = now.getSeconds();
+    /* 婚期与吉时（固定）：二〇二六年十一月二十八日 · 午时 */
+    var WEDDING_YEAR = 2026;
+    var WEDDING_MONTH = 11;
+    var WEDDING_DAY = 28;
+    var WEDDING_HOUR = 11;
+    var WEDDING_MINUTE = 28;
+
+    function renderInvite() {
+        var y = WEDDING_YEAR;
+        var m = WEDDING_MONTH;
+        var d = WEDDING_DAY;
+        var h = WEDDING_HOUR;
+        var mi = WEDDING_MINUTE;
 
         var yearCN = cnYear(y);
         var season = SEASON[m] || '';
@@ -1099,12 +1104,11 @@
         if (heroYear) heroYear.textContent = yearCN;
         if (heroSeason) heroSeason.textContent = season;
         if (inviteDate) inviteDate.textContent = yearCN + '年' + cnNumber(m) + '月' + cnNumber(d) + '日';
-        if (inviteTime) inviteTime.textContent = shichen + ' · ' + pad(h) + ':' + pad(mi) + ':' + pad(s);
+        if (inviteTime) inviteTime.textContent = shichen + ' · ' + pad(h) + ':' + pad(mi);
         if (footerText) footerText.textContent = yearCN + ' · ' + (season.charAt(1) || '');
     }
 
-    updateClock();
-    window.setInterval(updateClock, 1000);
+    renderInvite();
 })();
 </script>
 </body>

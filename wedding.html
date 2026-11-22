@@ -706,19 +706,25 @@
         return n < 10 ? '0' + n : String(n);
     }
 
-    function renderDate() {
-        var now = new Date();
-        var dateCN = cnYear(now.getFullYear()) + '年' + cnNumber(now.getMonth() + 1) + '月' + cnNumber(now.getDate()) + '日';
-        var shichen = ZHI[Math.floor(((now.getHours() + 1) % 24) / 2)] + '时';
+    /* 婚期与吉时（固定）：二〇二六年十一月二十八日 · 午时 */
+    var WEDDING_YEAR = 2026;
+    var WEDDING_MONTH = 11;
+    var WEDDING_DAY = 28;
+    var WEDDING_HOUR = 11;
+    var WEDDING_MINUTE = 28;
 
-        weddingDate.textContent = dateCN + ' · ' + WEEK[now.getDay()];
+    function renderDate() {
+        var day = new Date(WEDDING_YEAR, WEDDING_MONTH - 1, WEDDING_DAY);
+        var dateCN = cnYear(WEDDING_YEAR) + '年' + cnNumber(WEDDING_MONTH) + '月' + cnNumber(WEDDING_DAY) + '日';
+        var shichen = ZHI[Math.floor(((WEDDING_HOUR + 1) % 24) / 2)] + '时';
+
+        weddingDate.textContent = dateCN + ' · ' + WEEK[day.getDay()];
         infoDate.textContent = dateCN;
-        infoTime.textContent = shichen + ' · ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
-        infoWeek.textContent = WEEK[now.getDay()];
+        infoTime.textContent = shichen + ' · ' + pad(WEDDING_HOUR) + ':' + pad(WEDDING_MINUTE);
+        infoWeek.textContent = WEEK[day.getDay()];
     }
 
     renderDate();
-    window.setInterval(renderDate, 1000);
 
     /* ---------- 地图 ---------- */
     if (mapBtn) {
