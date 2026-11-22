@@ -444,7 +444,7 @@
     <section class="section hero active">
         <div class="text-content">
             <h1 class="main-title">穗遇良缘</h1>
-            <p class="subtitle">二〇二六 · 仲冬<br>一纸邀约，共赴良辰</p>
+            <p class="subtitle"><span id="heroYear">二〇二六</span> · <span id="heroSeason">孟冬</span><br>一纸邀约，共赴良辰</p>
         </div>
         <div class="scroll-hint" id="scrollHint">向下滑动</div>
     </section>
@@ -506,8 +506,8 @@
             <div class="label">邀 约</div>
             <h2 class="title">敬备喜筵，恭候光临</h2>
             <div class="invite">
-                <div class="invite-row"><span>良辰</span><span>二〇二六年 · 十二月 · 吉日</span></div>
-                <div class="invite-row"><span>时辰</span><span>午时 · 十二时</span></div>
+                <div class="invite-row"><span>良辰</span><span id="inviteDate">—</span></div>
+                <div class="invite-row"><span>时辰</span><span id="inviteTime">—</span></div>
                 <div class="invite-row"><span>席设</span><span>此处填写酒店与地址</span></div>
             </div>
             <button class="btn" id="mapBtn" type="button">查 看 地 图</button>
@@ -520,7 +520,7 @@
             <h2 class="title">穗遇良缘</h2>
             <p class="subtitle">感谢你见证我们的良辰<br>愿所遇皆温柔，所行皆坦途</p>
         </div>
-        <div class="footer">二〇二六 · 冬</div>
+        <div class="footer" id="footerText">二〇二六 · 冬</div>
     </section>
 
 </main>
@@ -694,6 +694,61 @@
             window.alert('请在此处填入酒店名称与详细地址，或把按钮链接改成地图地址。');
         });
     }
+
+    /* ---------- 按浏览器当前时间实时更新日期与时辰 ---------- */
+    var CN_DIGITS = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+    var SEASON = {
+        1: '季冬', 2: '孟春', 3: '仲春', 4: '季春',
+        5: '孟夏', 6: '仲夏', 7: '季夏', 8: '孟秋',
+        9: '仲秋', 10: '季秋', 11: '孟冬', 12: '仲冬'
+    };
+    var ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+
+    var heroYear = document.getElementById('heroYear');
+    var heroSeason = document.getElementById('heroSeason');
+    var inviteDate = document.getElementById('inviteDate');
+    var inviteTime = document.getElementById('inviteTime');
+    var footerText = document.getElementById('footerText');
+
+    function cnYear(y) {
+        return String(y).split('').map(function (d) { return CN_DIGITS[Number(d)]; }).join('');
+    }
+
+    function cnNumber(n) {
+        if (n <= 9) return CN_DIGITS[n];
+        if (n === 10) return '十';
+        if (n < 20) return '十' + CN_DIGITS[n - 10];
+        var tens = Math.floor(n / 10);
+        var ones = n % 10;
+        return CN_DIGITS[tens] + '十' + (ones ? CN_DIGITS[ones] : '');
+    }
+
+    function pad(n) {
+        return n < 10 ? '0' + n : String(n);
+    }
+
+    function updateClock() {
+        var now = new Date();
+        var y = now.getFullYear();
+        var m = now.getMonth() + 1;
+        var d = now.getDate();
+        var h = now.getHours();
+        var mi = now.getMinutes();
+        var s = now.getSeconds();
+
+        var yearCN = cnYear(y);
+        var season = SEASON[m] || '';
+        var shichen = ZHI[Math.floor(((h + 1) % 24) / 2)] + '时';
+
+        if (heroYear) heroYear.textContent = yearCN;
+        if (heroSeason) heroSeason.textContent = season;
+        if (inviteDate) inviteDate.textContent = yearCN + '年' + cnNumber(m) + '月' + cnNumber(d) + '日';
+        if (inviteTime) inviteTime.textContent = shichen + ' · ' + pad(h) + ':' + pad(mi) + ':' + pad(s);
+        if (footerText) footerText.textContent = yearCN + ' · ' + (season.charAt(1) || '');
+    }
+
+    updateClock();
+    window.setInterval(updateClock, 1000);
 })();
 </script>
 </body>
