@@ -450,6 +450,79 @@
         box-shadow: 0 0 28px rgba(217, 179, 130, .4);
     }
 
+    .modal-mask {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(8, 10, 14, .74);
+        -webkit-backdrop-filter: blur(3px);
+        backdrop-filter: blur(3px);
+    }
+
+    .modal-mask[hidden] {
+        display: none;
+    }
+
+    .modal {
+        width: min(400px, 100%);
+        padding: 32px 26px 26px;
+        border: 1px solid rgba(217, 179, 130, .45);
+        border-radius: 10px;
+        background: linear-gradient(180deg, #1c1316, #120c0e);
+        box-shadow: 0 30px 80px rgba(0, 0, 0, .62);
+        text-align: center;
+        animation: modal-in .24s ease;
+    }
+
+    @keyframes modal-in {
+        from { opacity: 0; transform: translateY(12px) scale(.98); }
+        to { opacity: 1; transform: none; }
+    }
+
+    .modal h3 {
+        font-size: 1rem;
+        font-weight: 400;
+        letter-spacing: .3em;
+        text-indent: .3em;
+        color: var(--gold);
+    }
+
+    .modal-venue {
+        margin-top: 16px;
+        font-size: 1.3rem;
+        line-height: 1.6;
+        letter-spacing: .06em;
+        color: var(--text);
+        word-break: break-word;
+    }
+
+    .modal-tip {
+        margin-top: 8px;
+        font-size: .84rem;
+        letter-spacing: .08em;
+        color: var(--muted);
+    }
+
+    .modal-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 26px;
+    }
+
+    .modal-actions .btn {
+        margin-top: 0;
+        padding: 10px 22px;
+        font-size: .8rem;
+        letter-spacing: .16em;
+        text-indent: .16em;
+    }
+
     .btn[disabled] {
         opacity: .55;
         cursor: wait;
@@ -685,6 +758,18 @@
     </section>
 
 </main>
+
+<div class="modal-mask" id="venueModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="venueModalTitle">
+        <h3 id="venueModalTitle">确 认 席 设</h3>
+        <p class="modal-venue" id="venueModalName">—</p>
+        <p class="modal-tip">刚才在地图中查看的是这个地址吗？</p>
+        <div class="modal-actions">
+            <button class="btn btn-solid" id="venueOk" type="button">是，就用这个</button>
+            <button class="btn btn-ghost" id="venueRetry" type="button">不是，重新填</button>
+        </div>
+    </div>
+</div>
 
 <script>
 (function () {
@@ -942,11 +1027,83 @@
         }
         var url = 'https://uri.amap.com/search?keyword=' + encodeURIComponent(keyword) +
                   '&src=suiyu-liangyuan&coordinate=gaode&callnative=1';
+        try {
+            window.sessionStorage.setItem('suiyu_map_pending', keyword);
+        } catch (e) { /* 忽略 */ }
         window.open(url, '_blank', 'noopener');
     }
 
     if (mapBtn) {
         mapBtn.addEventListener('click', openVenueMap);
+    }
+
+    /* ---------- 从地图返回后，弹窗确认席设 ---------- */
+    var venueModal = document.getElementById('venueModal');
+    var venueModalName = document.getElementById('venueModalName');
+    var venueOk = document.getElementById('venueOk');
+    var venueRetry = document.getElementById('venueRetry');
+    var lastFocus = null;
+
+    function closeVenueModal() {
+        if (!venueModal || venueModal.hidden) return;
+        venueModal.hidden = true;
+        if (lastFocus && typeof lastFocus.focus === 'function') {
+            lastFocus.focus();
+        }
+    }
+
+    function openVenueModal(value) {
+        if (!venueModal || !value) return;
+        venueModalName.textContent = value;
+        lastFocus = document.activeElement;
+        venueModal.hidden = false;
+        if (venueOk) venueOk.focus();
+    }
+
+    function checkPendingVenue() {
+        var value = null;
+        try {
+            value = window.sessionStorage.getItem('suiyu_map_pending');
+        } catch (e) {
+            value = null;
+        }
+        if (!value) return;
+        try {
+            window.sessionStorage.removeItem('suiyu_map_pending');
+        } catch (e) { /* 忽略 */ }
+        openVenueModal(value);
+    }
+
+    if (venueOk) {
+        venueOk.addEventListener('click', function () {
+            closeVenueModal();
+        });
+    }
+
+    if (venueRetry) {
+        venueRetry.addEventListener('click', function () {
+            closeVenueModal();
+            var fold = document.querySelector('.fold');
+            if (fold) fold.open = true;
+            if (venueInput) {
+                venueInput.focus();
+                venueInput.select();
+            }
+        });
+    }
+
+    if (venueModal) {
+        venueModal.addEventListener('click', function (event) {
+            if (event.target === venueModal) closeVenueModal();
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !venueModal.hidden) closeVenueModal();
+        });
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) checkPendingVenue();
+        });
+        window.addEventListener('focus', checkPendingVenue);
+        window.addEventListener('pageshow', checkPendingVenue);
     }
 
     /* ---------- 系统推荐席设：点选后填入并直接打开地图 ---------- */
