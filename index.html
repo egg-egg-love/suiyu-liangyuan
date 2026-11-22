@@ -295,6 +295,30 @@
         text-align: left;
     }
 
+    .venue-input {
+        width: min(280px, 56vw);
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid rgba(217, 179, 130, .45);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 1em;
+        letter-spacing: .06em;
+        padding: 4px 6px;
+        text-align: left;
+        outline: none;
+        transition: border-color .3s;
+    }
+
+    .venue-input::placeholder {
+        color: #8f8080;
+        letter-spacing: .08em;
+    }
+
+    .venue-input:focus {
+        border-bottom-color: var(--gold);
+    }
+
     .btn {
         display: inline-flex;
         align-items: center;
@@ -417,10 +441,14 @@
     @media (max-width: 600px) {
         .text-content { width: 92vw; padding: 16px; }
         .main-title { font-size: 2.6rem; letter-spacing: .06em; text-indent: .06em; }
-        .title { font-size: 1.6rem; letter-spacing: .08em; text-indent: .08em; }
+        .title { font-size: 1.42rem; letter-spacing: .04em; text-indent: .04em; }
         .timeline { gap: 16px; margin-top: 26px; }
         .timeline-item p { font-size: .92rem; }
-        .invite-row { font-size: .95rem; }
+        .invite { gap: 12px; max-width: 100%; }
+        .invite-row { flex-direction: column; gap: 4px; font-size: .92rem; }
+        .invite-row span:first-child { min-width: 0; text-align: center; font-size: .78rem; }
+        .invite-row span:last-child { text-align: center; }
+        .venue-input { width: min(250px, 72vw); text-align: center; }
         .scroll-hint { bottom: 26px; letter-spacing: .2em; text-indent: .2em; }
         .music-btn { top: 14px; right: 14px; width: 40px; height: 40px; }
     }
@@ -508,9 +536,9 @@
             <div class="invite">
                 <div class="invite-row"><span>良辰</span><span id="inviteDate">—</span></div>
                 <div class="invite-row"><span>时辰</span><span id="inviteTime">—</span></div>
-                <div class="invite-row"><span>席设</span><span>此处填写酒店与地址</span></div>
+                <div class="invite-row"><span>席设</span><span><input class="venue-input" id="venueInput" type="text" placeholder="输入酒店名称或详细地址" autocomplete="off" /></span></div>
             </div>
-            <button class="btn" id="mapBtn" type="button">查 看 地 图</button>
+            <button class="btn" id="mapBtn" type="button">在 地 图 中 查 看</button>
         </div>
     </section>
 
@@ -688,11 +716,45 @@
     }
 
     /* ---------- 地图按钮 ---------- */
+    /* ---------- 席设：用户填写地址后调用地图 ---------- */
     var mapBtn = document.getElementById('mapBtn');
-    if (mapBtn) {
-        mapBtn.addEventListener('click', function () {
-            window.alert('请在此处填入酒店名称与详细地址，或把按钮链接改成地图地址。');
+    var venueInput = document.getElementById('venueInput');
+    var VENUE_KEY = 'suiyu_venue';
+
+    if (venueInput) {
+        try {
+            var savedVenue = window.localStorage.getItem(VENUE_KEY);
+            if (savedVenue) venueInput.value = savedVenue;
+        } catch (e) { /* 隐私模式下忽略 */ }
+
+        venueInput.addEventListener('input', function () {
+            try {
+                window.localStorage.setItem(VENUE_KEY, venueInput.value);
+            } catch (e) { /* 忽略 */ }
         });
+
+        venueInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.keyCode === 13) {
+                event.preventDefault();
+                openVenueMap();
+            }
+        });
+    }
+
+    function openVenueMap() {
+        var keyword = venueInput ? venueInput.value.trim() : '';
+        if (!keyword) {
+            if (venueInput) venueInput.focus();
+            window.alert('请先填写酒店名称或详细地址');
+            return;
+        }
+        var url = 'https://uri.amap.com/search?keyword=' + encodeURIComponent(keyword) +
+                  '&src=suiyu-liangyuan&coordinate=gaode&callnative=1';
+        window.open(url, '_blank', 'noopener');
+    }
+
+    if (mapBtn) {
+        mapBtn.addEventListener('click', openVenueMap);
     }
 
     /* ---------- 按浏览器当前时间实时更新日期与时辰 ---------- */
