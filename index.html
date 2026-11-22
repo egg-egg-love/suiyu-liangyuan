@@ -344,6 +344,28 @@
         transform: translateY(-2px);
     }
 
+    .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 30px;
+    }
+
+    .btn-group .btn {
+        margin-top: 0;
+    }
+
+    .btn-ghost {
+        background: transparent;
+    }
+
+    .btn[disabled] {
+        opacity: .55;
+        cursor: wait;
+        transform: none;
+    }
+
     /* 首页向下滑动提示 */
     .scroll-hint {
         position: absolute;
@@ -538,7 +560,10 @@
                 <div class="invite-row"><span>时辰</span><span id="inviteTime">—</span></div>
                 <div class="invite-row"><span>席设</span><span><input class="venue-input" id="venueInput" type="text" placeholder="输入酒店名称或详细地址" autocomplete="off" /></span></div>
             </div>
-            <button class="btn" id="mapBtn" type="button">在 地 图 中 查 看</button>
+            <div class="btn-group">
+                <button class="btn" id="mapBtn" type="button">在 地 图 中 查 看</button>
+                <button class="btn btn-ghost" id="hotelBtn" type="button">推 荐 附 近 酒 店</button>
+            </div>
         </div>
     </section>
 
@@ -755,6 +780,78 @@
 
     if (mapBtn) {
         mapBtn.addEventListener('click', openVenueMap);
+    }
+
+    /* ---------- 按当前位置推荐附近酒店 ---------- */
+    var hotelBtn = document.getElementById('hotelBtn');
+
+    function wgs84ToGcj02(lng, lat) {
+        var a = 6378245.0;
+        var ee = 0.00669342162296594323;
+
+        function outOfChina(lng, lat) {
+            return lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271;
+        }
+        function transformLat(x, y) {
+            var ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+            ret += (20.0 * Math.sin(6.0 * x * Math.PI) + 20.0 * Math.sin(2.0 * x * Math.PI)) * 2.0 / 3.0;
+            ret += (20.0 * Math.sin(y * Math.PI) + 40.0 * Math.sin(y / 3.0 * Math.PI)) * 2.0 / 3.0;
+            ret += (160.0 * Math.sin(y / 12.0 * Math.PI) + 320 * Math.sin(y * Math.PI / 30.0)) * 2.0 / 3.0;
+            return ret;
+        }
+        function transformLng(x, y) {
+            var ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+            ret += (20.0 * Math.sin(6.0 * x * Math.PI) + 20.0 * Math.sin(2.0 * x * Math.PI)) * 2.0 / 3.0;
+            ret += (20.0 * Math.sin(x * Math.PI) + 40.0 * Math.sin(x / 3.0 * Math.PI)) * 2.0 / 3.0;
+            ret += (150.0 * Math.sin(x / 12.0 * Math.PI) + 300.0 * Math.sin(x / 30.0 * Math.PI)) * 2.0 / 3.0;
+            return ret;
+        }
+
+        if (outOfChina(lng, lat)) return [lng, lat];
+
+        var dLat = transformLat(lng - 105.0, lat - 35.0);
+        var dLng = transformLng(lng - 105.0, lat - 35.0);
+        var radLat = lat / 180.0 * Math.PI;
+        var magic = Math.sin(radLat);
+        magic = 1 - ee * magic * magic;
+        var sqrtMagic = Math.sqrt(magic);
+        dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * Math.PI);
+        dLng = (dLng * 180.0) / (a / sqrtMagic * Math.cos(radLat) * Math.PI);
+        return [lng + dLng, lat + dLat];
+    }
+
+    function openNearbyHotels() {
+        if (!hotelBtn) return;
+        if (!navigator.geolocation) {
+            window.alert('当前浏览器不支持定位。可以在席设中填写地址后点“在地图中查看”。');
+            return;
+        }
+        var original = hotelBtn.textContent;
+        hotelBtn.disabled = true;
+        hotelBtn.textContent = '定 位 中…';
+
+        navigator.geolocation.getCurrentPosition(
+            function (position) {
+                var gcj = wgs84ToGcj02(position.coords.longitude, position.coords.latitude);
+                var url = 'https://uri.amap.com/search?keyword=' + encodeURIComponent('酒店') +
+                          '&center=' + gcj[0].toFixed(6) + ',' + gcj[1].toFixed(6) +
+                          '&radius=3000&src=suiyu-liangyuan&coordinate=gaode&callnative=1';
+                hotelBtn.disabled = false;
+                hotelBtn.textContent = original;
+                window.open(url, '_blank', 'noopener');
+            },
+            function (error) {
+                hotelBtn.disabled = false;
+                hotelBtn.textContent = original;
+                var reason = error && error.code === 1 ? '你没有允许定位权限' : '定位失败';
+                window.alert(reason + '。允许定位后可以重试，或在席设中填写地址后点“在地图中查看”。');
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+    }
+
+    if (hotelBtn) {
+        hotelBtn.addEventListener('click', openNearbyHotels);
     }
 
     /* ---------- 按浏览器当前时间实时更新日期与时辰 ---------- */
