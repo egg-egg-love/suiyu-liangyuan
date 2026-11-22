@@ -319,6 +319,37 @@
         border-bottom-color: var(--gold);
     }
 
+    .venue-options {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .venue-option {
+        padding: 5px 14px;
+        border: 1px solid rgba(217, 179, 130, .4);
+        border-radius: 999px;
+        background: transparent;
+        color: #ece2dd;
+        font-family: inherit;
+        font-size: .86rem;
+        letter-spacing: .04em;
+        cursor: pointer;
+        transition: border-color .3s, color .3s, background .3s;
+    }
+
+    .venue-option:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+    }
+
+    .venue-option.active {
+        background: rgba(142, 22, 30, .5);
+        border-color: var(--gold);
+        color: var(--gold);
+    }
+
     .btn {
         display: inline-flex;
         align-items: center;
@@ -558,7 +589,14 @@
             <div class="invite">
                 <div class="invite-row"><span>良辰</span><span id="inviteDate">—</span></div>
                 <div class="invite-row"><span>时辰</span><span id="inviteTime">—</span></div>
-                <div class="invite-row"><span>席设</span><span><input class="venue-input" id="venueInput" type="text" placeholder="输入酒店名称或详细地址" autocomplete="off" /></span></div>
+                <div class="invite-row"><span>自己填写</span><span><input class="venue-input" id="venueInput" type="text" placeholder="输入酒店名称或详细地址" autocomplete="off" /></span></div>
+                <div class="invite-row">
+                    <span>系统推荐</span>
+                    <span class="venue-options">
+                        <button class="venue-option" type="button" data-venue="屯腰府">屯腰府</button>
+                        <button class="venue-option" type="button" data-venue="漯河和昌河交界处">漯河和昌河交界处</button>
+                    </span>
+                </div>
             </div>
             <div class="btn-group">
                 <button class="btn" id="mapBtn" type="button">在 地 图 中 查 看</button>
@@ -744,18 +782,34 @@
     /* ---------- 席设：用户填写地址后调用地图 ---------- */
     var mapBtn = document.getElementById('mapBtn');
     var venueInput = document.getElementById('venueInput');
+    var venueOptions = Array.prototype.slice.call(document.querySelectorAll('.venue-option'));
     var VENUE_KEY = 'suiyu_venue';
+
+    function markVenueOption(value) {
+        venueOptions.forEach(function (option) {
+            var active = option.getAttribute('data-venue') === value;
+            option.classList.toggle('active', active);
+        });
+    }
+
+    function saveVenue(value) {
+        try {
+            window.localStorage.setItem(VENUE_KEY, value);
+        } catch (e) { /* 忽略 */ }
+    }
 
     if (venueInput) {
         try {
             var savedVenue = window.localStorage.getItem(VENUE_KEY);
-            if (savedVenue) venueInput.value = savedVenue;
+            if (savedVenue) {
+                venueInput.value = savedVenue;
+                markVenueOption(savedVenue);
+            }
         } catch (e) { /* 隐私模式下忽略 */ }
 
         venueInput.addEventListener('input', function () {
-            try {
-                window.localStorage.setItem(VENUE_KEY, venueInput.value);
-            } catch (e) { /* 忽略 */ }
+            saveVenue(venueInput.value);
+            markVenueOption(venueInput.value.trim());
         });
 
         venueInput.addEventListener('keydown', function (event) {
@@ -781,6 +835,17 @@
     if (mapBtn) {
         mapBtn.addEventListener('click', openVenueMap);
     }
+
+    /* ---------- 系统推荐席设：点选后填入并直接打开地图 ---------- */
+    venueOptions.forEach(function (option) {
+        option.addEventListener('click', function () {
+            var value = option.getAttribute('data-venue') || '';
+            if (venueInput) venueInput.value = value;
+            saveVenue(value);
+            markVenueOption(value);
+            openVenueMap();
+        });
+    });
 
     /* ---------- 按当前位置推荐附近酒店 ---------- */
     var hotelBtn = document.getElementById('hotelBtn');
