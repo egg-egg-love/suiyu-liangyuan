@@ -439,6 +439,17 @@
         background: transparent;
     }
 
+    .btn-solid {
+        background: linear-gradient(135deg, #e2c08d, #c9a06a);
+        border-color: transparent;
+        color: #4a0a10;
+    }
+
+    .btn-solid:hover {
+        background: linear-gradient(135deg, #efd3a6, #d9b382);
+        box-shadow: 0 0 28px rgba(217, 179, 130, .4);
+    }
+
     .btn[disabled] {
         opacity: .55;
         cursor: wait;
@@ -657,6 +668,7 @@
                 </details>
             </div>
             <div class="btn-group">
+                <button class="btn btn-solid" id="confirmBtn" type="button">确 定</button>
                 <button class="btn" id="mapBtn" type="button">在 地 图 中 查 看</button>
                 <button class="btn btn-ghost" id="hotelBtn" type="button">推 荐 附 近 酒 店</button>
             </div>
@@ -948,6 +960,24 @@
             openVenueMap();
         });
     });
+
+    /* ---------- 确定：保存姓名与席设后进入婚礼页 ---------- */
+    var confirmBtn = document.getElementById('confirmBtn');
+
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function () {
+            var groom = groomInput ? groomInput.value.trim() : '';
+            if (!groom) {
+                if (groomInput) groomInput.focus();
+                window.alert('请先填写男方姓名');
+                return;
+            }
+            writeSaved(GROOM_KEY, groom);
+            writeSaved(BRIDE_KEY, brideInput && brideInput.value.trim() ? brideInput.value.trim() : BRIDE_DEFAULT);
+            if (venueInput) saveVenue(venueInput.value.trim());
+            window.location.href = 'wedding.html';
+        });
+    }
 
     /* ---------- 按当前位置推荐附近酒店 ---------- */
     var hotelBtn = document.getElementById('hotelBtn');
