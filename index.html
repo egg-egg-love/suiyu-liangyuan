@@ -350,6 +350,54 @@
         color: var(--gold);
     }
 
+    .name-input {
+        width: min(200px, 48vw);
+        text-align: center;
+    }
+
+    .fold {
+        border-top: 1px solid rgba(217, 179, 130, .16);
+        padding-top: 8px;
+    }
+
+    .fold summary {
+        list-style: none;
+        cursor: pointer;
+        color: var(--gold);
+        font-size: .84rem;
+        letter-spacing: .22em;
+        text-align: center;
+        padding: 4px 0;
+        opacity: .86;
+        transition: opacity .3s;
+    }
+
+    .fold summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .fold summary::after {
+        content: '▾';
+        display: inline-block;
+        margin-left: 8px;
+        font-size: .7rem;
+        transition: transform .3s;
+    }
+
+    .fold[open] summary::after {
+        transform: rotate(180deg);
+    }
+
+    .fold summary:hover {
+        opacity: 1;
+    }
+
+    .fold-body {
+        display: flex;
+        justify-content: center;
+        padding: 10px 0 4px;
+    }
+
     .btn {
         display: inline-flex;
         align-items: center;
@@ -589,14 +637,24 @@
             <div class="invite">
                 <div class="invite-row"><span>良辰</span><span id="inviteDate">—</span></div>
                 <div class="invite-row"><span>时辰</span><span id="inviteTime">—</span></div>
-                <div class="invite-row"><span>自己填写</span><span><input class="venue-input" id="venueInput" type="text" placeholder="输入酒店名称或详细地址" autocomplete="off" /></span></div>
-                <div class="invite-row">
-                    <span>系统推荐</span>
-                    <span class="venue-options">
-                        <button class="venue-option" type="button" data-venue="豚妖府">豚妖府</button>
-                        <button class="venue-option" type="button" data-venue="洛河和瀍河交界处">洛河和瀍河交界处</button>
-                    </span>
-                </div>
+                <div class="invite-row"><span>男方</span><span><input class="venue-input name-input" id="groomInput" type="text" placeholder="填写你的名字" autocomplete="off" /></span></div>
+                <div class="invite-row"><span>女方</span><span><input class="venue-input name-input" id="brideInput" type="text" placeholder="输入女方名称" autocomplete="off" /></span></div>
+                <div class="invite-row"><span>席设</span><span id="venueDisplay">—</span></div>
+                <details class="fold">
+                    <summary>自己填写席设</summary>
+                    <div class="fold-body">
+                        <input class="venue-input" id="venueInput" type="text" placeholder="输入酒店名称或详细地址" autocomplete="off" />
+                    </div>
+                </details>
+                <details class="fold">
+                    <summary>系统推荐席设</summary>
+                    <div class="fold-body">
+                        <span class="venue-options">
+                            <button class="venue-option" type="button" data-venue="豚妖府">豚妖府</button>
+                            <button class="venue-option" type="button" data-venue="洛河和瀍河交界处">洛河和瀍河交界处</button>
+                        </span>
+                    </div>
+                </details>
             </div>
             <div class="btn-group">
                 <button class="btn" id="mapBtn" type="button">在 地 图 中 查 看</button>
@@ -778,12 +836,53 @@
         });
     }
 
+    /* ---------- 新人姓名：男方自己填，女方默认满穗 ---------- */
+    var groomInput = document.getElementById('groomInput');
+    var brideInput = document.getElementById('brideInput');
+    var GROOM_KEY = 'suiyu_groom';
+    var BRIDE_KEY = 'suiyu_bride';
+    var BRIDE_DEFAULT = '满穗';
+
+    function readSaved(key) {
+        try {
+            return window.localStorage.getItem(key);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function writeSaved(key, value) {
+        try {
+            window.localStorage.setItem(key, value);
+        } catch (e) { /* 忽略 */ }
+    }
+
+    if (brideInput) {
+        brideInput.value = readSaved(BRIDE_KEY) || BRIDE_DEFAULT;
+        brideInput.addEventListener('input', function () {
+            writeSaved(BRIDE_KEY, brideInput.value);
+        });
+    }
+
+    if (groomInput) {
+        var savedGroom = readSaved(GROOM_KEY);
+        if (savedGroom) groomInput.value = savedGroom;
+        groomInput.addEventListener('input', function () {
+            writeSaved(GROOM_KEY, groomInput.value);
+        });
+    }
+
     /* ---------- 地图按钮 ---------- */
     /* ---------- 席设：用户填写地址后调用地图 ---------- */
     var mapBtn = document.getElementById('mapBtn');
     var venueInput = document.getElementById('venueInput');
+    var venueDisplay = document.getElementById('venueDisplay');
     var venueOptions = Array.prototype.slice.call(document.querySelectorAll('.venue-option'));
     var VENUE_KEY = 'suiyu_venue';
+
+    function renderVenueDisplay(value) {
+        if (venueDisplay) venueDisplay.textContent = value || '—';
+    }
 
     function markVenueOption(value) {
         venueOptions.forEach(function (option) {
@@ -804,12 +903,14 @@
             if (savedVenue) {
                 venueInput.value = savedVenue;
                 markVenueOption(savedVenue);
+                renderVenueDisplay(savedVenue);
             }
         } catch (e) { /* 隐私模式下忽略 */ }
 
         venueInput.addEventListener('input', function () {
             saveVenue(venueInput.value);
             markVenueOption(venueInput.value.trim());
+            renderVenueDisplay(venueInput.value.trim());
         });
 
         venueInput.addEventListener('keydown', function (event) {
@@ -843,6 +944,7 @@
             if (venueInput) venueInput.value = value;
             saveVenue(value);
             markVenueOption(value);
+            renderVenueDisplay(value);
             openVenueMap();
         });
     });
